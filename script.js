@@ -11,18 +11,21 @@ async function fetchData() {
   const res = await fetch(sheetUrl);
   const text = await res.text();
   const json = JSON.parse(text.slice(47, -2));
-  // Kolumny: 0=id, 1=title, 2=author, 3=event, 4=status, 5=hasSheet, 6-9=s,a,t,b
+  // A: tytuł (0), B: autor (1), C: aranżer (2), D: gatunek (3), E: wydarzenie (4), F: status (5), G: nuty (6), H-J-K-L: s-a-t-b (7-10)
   return json.table.rows.map(r => ({
-    id: r.c[0]?.v ?? "",
-    title: r.c[1]?.v ?? "",
-    author: r.c[2]?.v ?? "",
-    event: r.c[3]?.v ?? "",
-    status: Number(r.c[4]?.v) || 0,
-    hasSheetMusic: !!r.c[5]?.v,
-    hasSoprano: !!r.c[6]?.v,
-    hasAlto: !!r.c[7]?.v,
-    hasTenor: !!r.c[8]?.v,
-    hasBass: !!r.c[9]?.v
+    title: r.c[0]?.v ?? "",
+    author: r.c[1]?.v ?? "",
+    arranger: r.c[2]?.v ?? "",
+    genre: r.c[3]?.v ?? "",
+    event: r.c[4]?.v ?? "",
+    status: Number(r.c[5]?.v) || 0,
+    hasSheetMusic: !!r.c[6]?.v,
+    hasSoprano: !!r.c[7]?.v,
+    hasAlto: !!r.c[8]?.v,
+    hasTenor: !!r.c[9]?.v,
+    hasBass: !!r.c[10]?.v,
+    // ID: generowane (można z tytułu+autora)
+    id: `${r.c[0]?.v ?? ""}|${r.c[1]?.v ?? ""}|${r.c[2]?.v ?? ""}|${r.c[3]?.v ?? ""}|${r.c[4]?.v ?? ""}`
   }));
 }
 
@@ -72,22 +75,26 @@ function normalizeText(str) {
     .replace(/\s+/g, " ")
     .trim();
 }
-function fuzzyMatch(searchTerm, targetText) {
+function fuzzyMatch(searchTerm, ...fields) {
   if (!searchTerm) return true;
   const normalizedSearch = normalizeText(searchTerm);
-  const normalizedTarget = normalizeText(targetText);
-  if (normalizedTarget.includes(normalizedSearch)) return true;
-  const searchWords = normalizedSearch.split(" ").filter(Boolean);
-  return searchWords.every(word => normalizedTarget.includes(word));
+  return fields.some(field => {
+    const normalizedTarget = normalizeText(field);
+    if (normalizedTarget.includes(normalizedSearch)) return true;
+    const searchWords = normalizedSearch.split(" ").filter(Boolean);
+    return searchWords.every(word => normalizedTarget.includes(word));
+  });
 }
 
 // ----------- Wypełnianie selectów filtrujących ---------
 function renderFilters() {
   const authorSet = new Set(data.map(x => x.author).filter(Boolean));
-  const titleSet = new Set(data.map(x => x.title).filter(Boolean));
+  const arrangerSet = new Set(data.map(x => x.arranger).filter(Boolean));
+  const genreSet = new Set(data.map(x => x.genre).filter(Boolean));
   const eventSet = new Set(data.map(x => x.event).filter(Boolean));
   fillSelect('.filters__select--author', ["Wszyscy autorzy", ...[...authorSet]], ["all", ...[...authorSet]]);
-  fillSelect('.filters__select--title', ["Wszystkie tytuły", ...[...titleSet]], ["all", ...[...titleSet]]);
+  fillSelect('.filters__select--arranger', ["Wszyscy aranżerzy", ...[...arrangerSet]], ["all", ...[...arrangerSet]]);
+  fillSelect('.filters__select--genre', ["Wszystkie gatunki", ...[...genreSet]], ["all", ...[...genreSet]]);
   fillSelect('.filters__select--event', ["Wszystkie wydarzenia", ...[...eventSet]], ["all", ...[...eventSet]]);
 }
 
@@ -108,21 +115,22 @@ function getFilters() {
     search: document.querySelector('.search__input').value,
     onlyActive: document.querySelector('.filters__checkbox--active').checked,
     author: document.querySelector('.filters__select--author').value,
-    title: document.querySelector('.filters__select--title').value,
+    arranger: document.querySelector('.filters__select--arranger').value,
+    genre: document.querySelector('.filters__select--genre').value,
     event: document.querySelector('.filters__select--event').value,
   }
 }
 function filterAndSort() {
   const f = getFilters();
   let result = data.filter(piece => {
-    if (f.search && !(
-      fuzzyMatch(f.search, piece.title) ||
-      fuzzyMatch(f.search, piece.author) ||
-      fuzzyMatch(f.search, piece.event)
+    if (f.search && !fuzzyMatch(
+      f.search,
+      piece.title, piece.author, piece.arranger, piece.genre, piece.event
     )) return false;
     if (f.onlyActive && piece.status !== 1) return false;
     if (f.author !== "all" && piece.author !== f.author) return false;
-    if (f.title !== "all" && piece.title !== f.title) return false;
+    if (f.arranger !== "all" && piece.arranger !== f.arranger) return false;
+    if (f.genre !== "all" && piece.genre !== f.genre) return false;
     if (f.event !== "all" && piece.event !== f.event) return false;
     return true;
   });
@@ -145,6 +153,8 @@ function renderTable() {
     tr.innerHTML = `
       <td>${piece.title}</td>
       <td>${piece.author}</td>
+      <td>${piece.arranger}</td>
+      <td>${piece.genre}</td>
       <td>${piece.event}</td>
       <td class="results__cell--actions">
         ${piece.hasSheetMusic ? `<button class="action-btn" data-type="sheet" data-id="${piece.id}">🎼</button>` : ""}
@@ -169,7 +179,7 @@ document.querySelectorAll('.results__header[data-key]').forEach(th => {
 });
 
 // Obsługa filtrów i wyszukiwania
-['.search__input', '.filters__checkbox--active', '.filters__select--author', '.filters__select--title', '.filters__select--event']
+['.search__input', '.filters__checkbox--active', '.filters__select--author', '.filters__select--arranger', '.filters__select--genre', '.filters__select--event']
   .forEach(sel => {
     document.querySelector(sel).addEventListener('input', renderTable);
   });

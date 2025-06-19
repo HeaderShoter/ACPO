@@ -23,7 +23,7 @@
   <div class="container">
     <!-- Wyszukiwanie -->
     <div class="search">
-      <input type="text" class="search__input" placeholder="Wyszukaj tytuł, autora lub wydarzenie..." aria-label="Szukaj">
+      <input type="text" class="search__input" placeholder="Wyszukaj tytuł, autora, aranżera, gatunek lub wydarzenie..." aria-label="Szukaj">
     </div>
 
     <!-- Filtry -->
@@ -35,8 +35,11 @@
       <select class="filters__select filters__select--author" aria-label="Filtruj według autora">
         <option value="all">Wszyscy autorzy</option>
       </select>
-      <select class="filters__select filters__select--title" aria-label="Filtruj według tytułu">
-        <option value="all">Wszystkie tytuły</option>
+      <select class="filters__select filters__select--arranger" aria-label="Filtruj według aranżera">
+        <option value="all">Wszyscy aranżerzy</option>
+      </select>
+      <select class="filters__select filters__select--genre" aria-label="Filtruj według gatunku">
+        <option value="all">Wszystkie gatunki</option>
       </select>
       <select class="filters__select filters__select--event" aria-label="Filtruj według wydarzenia">
         <option value="all">Wszystkie wydarzenia</option>
@@ -51,6 +54,8 @@
             <tr>
               <th class="results__header" data-key="title">Tytuł</th>
               <th class="results__header" data-key="author">Autor</th>
+              <th class="results__header" data-key="arranger">Aranżer</th>
+              <th class="results__header" data-key="genre">Gatunek</th>
               <th class="results__header" data-key="event">Wydarzenie</th>
               <th class="results__header results__header--actions"></th>
             </tr>
