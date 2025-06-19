@@ -1,5 +1,5 @@
 // script.js
-// Inicjalizacja i logika aplikacji
+// Inicjalizacja i logika aplikacji z poprawionym pobieraniem pierwszej pozycji
 
 // Globalne zmienne
 let allData = [];
@@ -29,7 +29,7 @@ async function fetchSheet() {
   const res = await fetch(url);
   const text = await res.text();
   const json = JSON.parse(text.slice(47, -2));
-  return json.table.rows.slice(1).map(r => ({
+  return json.table.rows.map(r => ({
     id: r.c[0]?.v,
     title: r.c[1]?.v || '',
     author: r.c[2]?.v || '',
@@ -43,7 +43,7 @@ async function fetchSheet() {
   }));
 }
 
-// Normalizacja tekstu (usuniecie diakrytyków, spacji i lowercase)
+// Normalizacja tekstu (usuwanie diakrytyków, spacji i lowercase)
 function normalize(str) {
   return str
     .normalize('NFD')
@@ -60,7 +60,7 @@ function filterAndRender() {
     if (authorSelect.value && item.author !== authorSelect.value) return false;
     if (titleSelect.value && item.title !== titleSelect.value) return false;
     if (eventSelect.value && item.event !== eventSelect.value) return false;
-    const hay = normalize(item.title + item.author);
+    const hay = normalize(item.title + item.author + item.event);
     return hay.includes(q);
   });
   sortData();
