@@ -1,279 +1,249 @@
-// script.js
-// Inicjalizacja i logika aplikacji z poprawionym pobieraniem pierwszej pozycji
+// Dane przykładowe (jak w mockData z lovable.dev)
+const data = [
+  {
+    id: "001",
+    title: "Ave Maria",
+    author: "Franz Schubert",
+    event: "Koncert Bożonarodzeniowy",
+    status: 1,
+    hasSheetMusic: true,
+    hasSoprano: true,
+    hasAlto: true,
+    hasTenor: false,
+    hasBass: true
+  },
+  {
+    id: "002",
+    title: "Hallelujah",
+    author: "Leonard Cohen",
+    event: "Koncert Wiosenny",
+    status: 0,
+    hasSheetMusic: true,
+    hasSoprano: true,
+    hasAlto: true,
+    hasTenor: true,
+    hasBass: true
+  },
+  {
+    id: "003",
+    title: "Lux Aeterna",
+    author: "Morten Lauridsen",
+    event: "Festiwal Muzyki Chóralnej",
+    status: 1,
+    hasSheetMusic: false,
+    hasSoprano: true,
+    hasAlto: false,
+    hasTenor: true,
+    hasBass: false
+  }
+];
 
-// Globalne zmienne
-let allData = [];
-let filteredData = [];
-let pageIndex = 0;
-const pageSize = 20;
-let sortKey = 'title';
-let sortAsc = true;
+let sortColumn = "title";
+let sortDirection = "asc";
+let currentFontSize = 16;
 
-// Elementy DOM
-const searchInput = document.querySelector('.search__input');
-const singingCheckbox = document.querySelector('.filters__checkbox--singing');
-const authorSelect = document.querySelector('.filters__select--author');
-const titleSelect = document.querySelector('.filters__select--title');
-const eventSelect = document.querySelector('.filters__select--event');
-const tableBody = document.querySelector('.results__body');
-const tableContainer = document.querySelector('.results__table-container');
-const themeToggle = document.querySelector('.controls__button--theme-toggle');
-const fontIncrease = document.querySelector('.controls__button--font-increase');
-const fontDecrease = document.querySelector('.controls__button--font-decrease');
-const headerCells = document.querySelectorAll('.results__cell--header');
+// Preferencje z localStorage
+document.addEventListener("DOMContentLoaded", () => {
+  const savedTheme = localStorage.getItem("choir-theme");
+  if (savedTheme === "dark") document.documentElement.classList.add("dark");
 
-// Fetch arkusz Google jako JSON
-async function fetchSheet() {
-  const sheetId = '1p08YqPtheg66-0BuI5MvefcZJ7xMRqqXsJ4998naSUA';
-  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=Sheet1`;
-  const res = await fetch(url);
-  const text = await res.text();
-  const json = JSON.parse(text.slice(47, -2));
-  return json.table.rows.map(r => ({
-    id: r.c[0]?.v,
-    title: r.c[1]?.v || '',
-    author: r.c[2]?.v || '',
-    event: r.c[3]?.v || '',
-    status: r.c[4]?.v,
-    sheetUrl: r.c[5]?.v || '',
-    audioS: r.c[6]?.v || '',
-    audioA: r.c[7]?.v || '',
-    audioT: r.c[8]?.v || '',
-    audioB: r.c[9]?.v || ''
-  }));
-}
+  const savedFont = localStorage.getItem("choir-font-size");
+  if (savedFont) {
+    currentFontSize = parseInt(savedFont);
+    document.documentElement.style.fontSize = currentFontSize + "px";
+  }
 
-// Normalizacja tekstu (usuwanie diakrytyków, spacji i lowercase)
-function normalize(str) {
+  renderFilters();
+  renderTable();
+});
+
+// ----------- Sterowanie motywem i czcionką ---------
+document.querySelector('.controls__button--theme-toggle').onclick = () => {
+  document.documentElement.classList.toggle("dark");
+  const newTheme = document.documentElement.classList.contains("dark") ? "dark" : "light";
+  localStorage.setItem("choir-theme", newTheme);
+  document.querySelector('.controls__icon').textContent = newTheme === "dark" ? "☀️" : "🌙";
+};
+
+document.querySelector('.controls__button--font-increase').onclick = () => {
+  currentFontSize = Math.min(currentFontSize + 2, 24);
+  document.documentElement.style.fontSize = currentFontSize + "px";
+  localStorage.setItem("choir-font-size", currentFontSize);
+};
+document.querySelector('.controls__button--font-decrease').onclick = () => {
+  currentFontSize = Math.max(currentFontSize - 2, 12);
+  document.documentElement.style.fontSize = currentFontSize + "px";
+  localStorage.setItem("choir-font-size", currentFontSize);
+};
+
+// ----------- Normalizacja tekstu dla wyszukiwarki ---------
+function normalizeText(str) {
   return str
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/\s+/g, '')
-    .toLowerCase();
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[łŁ]/g, "l")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function fuzzyMatch(searchTerm, targetText) {
+  if (!searchTerm) return true;
+  const normalizedSearch = normalizeText(searchTerm);
+  const normalizedTarget = normalizeText(targetText);
+  if (normalizedTarget.includes(normalizedSearch)) return true;
+  const searchWords = normalizedSearch.split(" ").filter(Boolean);
+  return searchWords.every(word => normalizedTarget.includes(word));
 }
 
-// Filtracja i sortowanie, potem reset i render
-function filterAndRender() {
-  const q = normalize(searchInput.value);
-  filteredData = allData.filter(item => {
-    if (singingCheckbox.checked && item.status === 0) return false;
-    if (authorSelect.value && item.author !== authorSelect.value) return false;
-    if (titleSelect.value && item.title !== titleSelect.value) return false;
-    if (eventSelect.value && item.event !== eventSelect.value) return false;
-    const hay = normalize(item.title + item.author + item.event);
-    return hay.includes(q);
+// ----------- Wypełnianie selectów filtrujących ---------
+function renderFilters() {
+  const authorSet = new Set(data.map(x => x.author));
+  const titleSet = new Set(data.map(x => x.title));
+  const eventSet = new Set(data.map(x => x.event));
+  fillSelect('.filters__select--author', ["Wszyscy autorzy", ...[...authorSet]], ["all", ...[...authorSet]]);
+  fillSelect('.filters__select--title', ["Wszystkie tytuły", ...[...titleSet]], ["all", ...[...titleSet]]);
+  fillSelect('.filters__select--event', ["Wszystkie wydarzenia", ...[...eventSet]], ["all", ...[...eventSet]]);
+}
+
+function fillSelect(selector, names, values) {
+  const select = document.querySelector(selector);
+  select.innerHTML = "";
+  names.forEach((n, i) => {
+    const opt = document.createElement("option");
+    opt.value = values[i];
+    opt.textContent = n;
+    select.appendChild(opt);
   });
-  sortData();
-  pageIndex = 0;
-  tableBody.innerHTML = '';
-  loadMore();
 }
 
-// Sortowanie według klucza
-function sortData() {
-  filteredData.sort((a, b) => {
-    const va = a[sortKey] || '';
-    const vb = b[sortKey] || '';
-    const cmp = va.localeCompare(vb, 'pl');
-    return sortAsc ? cmp : -cmp;
-  });
-}
-
-// Render kolejnego batcha
-function loadMore() {
-  const start = pageIndex * pageSize;
-  const end = start + pageSize;
-  const batch = filteredData.slice(start, end);
-  batch.forEach(addRow);
-  pageIndex++;
-}
-
-// Dodaje pojedynczy wiersz do tabeli
-function addRow(item) {
-  const tr = document.createElement('tr');
-  tr.className = 'results__row';
-  tr.innerHTML = `
-    <td class="results__cell">${item.title}</td>
-    <td class="results__cell">${item.author}</td>
-    <td class="results__cell">${item.event}</td>
-    <td class="results__cell results__cell--actions"></td>
-  `;
-  const actionsTd = tr.querySelector('.results__cell--actions');
-
-  // Nuty
-  if (item.sheetUrl) {
-    const btn = document.createElement('button');
-    btn.className = 'results__button--sheet';
-    btn.textContent = '🎼';
-    btn.addEventListener('click', () => openSheetModal(item.id));
-    actionsTd.appendChild(btn);
+// ----------- Wyszukiwanie, filtrowanie i sortowanie ----------
+function getFilters() {
+  return {
+    search: document.querySelector('.search__input').value,
+    onlyActive: document.querySelector('.filters__checkbox--active').checked,
+    author: document.querySelector('.filters__select--author').value,
+    title: document.querySelector('.filters__select--title').value,
+    event: document.querySelector('.filters__select--event').value,
   }
-
-  // Audio
-  if (item.audioS || item.audioA || item.audioT || item.audioB) {
-    const btn = document.createElement('button');
-    btn.className = 'results__button--audio';
-    btn.textContent = '🔊';
-    btn.addEventListener('click', () => openAudioModal(item.id));
-    actionsTd.appendChild(btn);
-  }
-
-  tableBody.appendChild(tr);
 }
-
-// Tworzy i wyświetla modal blokujący całą stronę
-function createModal(innerHtml) {
-  // Zablokuj scroll tła
-  document.body.style.overflow = 'hidden';
-
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-
-  const box = document.createElement('div');
-  box.className = 'modal-box';
-  box.innerHTML = innerHtml;
-
-  overlay.appendChild(box);
-  document.body.appendChild(overlay);
-
-  // Zamknięcie tylko przyciskiem "Wróć"
-  const backBtn = box.querySelector('#back');
-  if (backBtn) backBtn.addEventListener('click', () => closeModal(overlay));
-
-  return overlay;
-}
-
-// Zamknięcie modalu i odblokowanie scrolla
-function closeModal(overlay) {
-  document.body.removeChild(overlay);
-  document.body.style.overflow = '';
-}
-
-
-// Modal do nut
-function openSheetModal(id) {
-  const modal = createModal(`
-    <button id="download">Pobierz</button>
-    <button id="open">Otwórz</button>
-    <button id="back">Wróć</button>
-  `);
-  modal.querySelector('#download').addEventListener('click', () => {
-    window.location.href = `https://www.drive.pl/download/nuty/${id}`;
+function filterAndSort() {
+  const f = getFilters();
+  let result = data.filter(piece => {
+    if (f.search && !(
+      fuzzyMatch(f.search, piece.title) ||
+      fuzzyMatch(f.search, piece.author) ||
+      fuzzyMatch(f.search, piece.event)
+    )) return false;
+    if (f.onlyActive && piece.status !== 1) return false;
+    if (f.author !== "all" && piece.author !== f.author) return false;
+    if (f.title !== "all" && piece.title !== f.title) return false;
+    if (f.event !== "all" && piece.event !== f.event) return false;
+    return true;
   });
-  modal.querySelector('#open').addEventListener('click', () => {
-    window.open(`https://www.drive.pl/play/nuty/${id}`, '_blank');
+  result.sort((a, b) => {
+    let va = a[sortColumn] || "";
+    let vb = b[sortColumn] || "";
+    if (sortDirection === "asc") return va.localeCompare(vb, "pl");
+    else return vb.localeCompare(va, "pl");
+  });
+  return result;
+}
+
+// ----------- Renderowanie tabeli -----------
+function renderTable() {
+  const tbody = document.querySelector('.results__body');
+  tbody.innerHTML = "";
+  const rows = filterAndSort();
+  rows.forEach(piece => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${piece.title}</td>
+      <td>${piece.author}</td>
+      <td>${piece.event}</td>
+      <td class="results__cell--actions">
+        ${piece.hasSheetMusic ? `<button class="action-btn" data-type="sheet" data-id="${piece.id}">🎼</button>` : ""}
+        ${(piece.hasSoprano || piece.hasAlto || piece.hasTenor || piece.hasBass) ? `<button class="action-btn" data-type="audio" data-id="${piece.id}">🔊</button>` : ""}
+      </td>
+    `;
+    tbody.appendChild(tr);
   });
 }
 
-// Modal do audio
-function openAudioModal(id) {
-  const modal = createModal(`
-    <select id="voice">
-      <option value="s">Sopran</option>
-      <option value="a">Alt</option>
-      <option value="t">Tenor</option>
-      <option value="b">Bas</option>
-    </select>
-    <button id="download">Pobierz</button>
-    <button id="open">Otwórz</button>
-    <button id="back">Wróć</button>
-  `);
-  const select = modal.querySelector('#voice');
-  modal.querySelector('#download').addEventListener('click', () => {
-    const v = select.value;
-    window.location.href = `https://www.drive.pl/download/audio/${v}/${id}`;
-  });
-  modal.querySelector('#open').addEventListener('click', () => {
-    const v = select.value;
-    window.open(`https://www.drive.pl/play/audio/${v}/${id}`, '_blank');
-  });
-}
-
-// Tworzy i wyświetla modal
-function createModal(innerHtml) {
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  const box = document.createElement('div');
-  box.className = 'modal-box';
-  box.innerHTML = innerHtml;
-  overlay.appendChild(box);
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay || e.target.id === 'back') {
-      document.body.removeChild(overlay);
-    }
-  });
-  return box;
-}
-
-// Inicjalizacja motywu i czcionki
-function initPreferences() {
-  const theme = localStorage.getItem('theme') || 'light';
-  document.documentElement.classList.toggle('dark', theme === 'dark');
-  themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
-
-  const fs = localStorage.getItem('fontSize');
-  if (fs) document.documentElement.style.fontSize = fs + 'px';
-}
-
-// Listener scroll do infinite scroll
-tableContainer.addEventListener('scroll', () => {
-  if (tableContainer.scrollTop + tableContainer.clientHeight >= tableContainer.scrollHeight - 50) {
-    loadMore();
-  }
-});
-
-// Eventy
-searchInput.addEventListener('input', filterAndRender);
-singingCheckbox.addEventListener('change', filterAndRender);
-authorSelect.addEventListener('change', filterAndRender);
-titleSelect.addEventListener('change', filterAndRender);
-eventSelect.addEventListener('change', filterAndRender);
-fontIncrease.addEventListener('click', () => {
-  const root = document.documentElement;
-  const size = parseInt(getComputedStyle(root).fontSize) + 1;
-  root.style.fontSize = size + 'px';
-  localStorage.setItem('fontSize', size);
-});
-fontDecrease.addEventListener('click', () => {
-  const root = document.documentElement;
-  const size = parseInt(getComputedStyle(root).fontSize) - 1;
-  root.style.fontSize = size + 'px';
-  localStorage.setItem('fontSize', size);
-});
-themeToggle.addEventListener('click', () => {
-  const isDark = document.documentElement.classList.toggle('dark');
-  localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  themeToggle.textContent = isDark ? '☀️' : '🌙';
-});
-
-headerCells.forEach(th => {
+// Obsługa sortowania kliknięciem w nagłówki
+document.querySelectorAll('.results__header[data-key]').forEach(th => {
   th.addEventListener('click', () => {
-    let key;
-    if (th.classList.contains('results__cell--title')) key = 'title';
-    else if (th.classList.contains('results__cell--author')) key = 'author';
-    else if (th.classList.contains('results__cell--event')) key = 'event';
-    if (!key) return;
-    if (sortKey === key) sortAsc = !sortAsc;
-    else { sortKey = key; sortAsc = true; }
-    filterAndRender();
+    const col = th.dataset.key;
+    if (sortColumn === col) sortDirection = sortDirection === "asc" ? "desc" : "asc";
+    else {
+      sortColumn = col;
+      sortDirection = "asc";
+    }
+    renderTable();
   });
 });
 
-// Start
-window.addEventListener('DOMContentLoaded', async () => {
-  initPreferences();
+// Obsługa filtrów i wyszukiwania
+['.search__input', '.filters__checkbox--active', '.filters__select--author', '.filters__select--title', '.filters__select--event']
+  .forEach(sel => {
+    document.querySelector(sel).addEventListener('input', renderTable);
+  });
 
-  allData = await fetchSheet();
+// ----------- Modal -----------
+let currentPieceId = null;
+let currentModalType = null;
+function closeAllModals() {
+  document.querySelectorAll('.modal').forEach(m => m.setAttribute("aria-hidden", "true"));
+  document.body.style.overflow = "";
+}
+function openModal(type, id) {
+  closeAllModals();
+  currentPieceId = id;
+  currentModalType = type;
+  if (type === "audio") {
+    document.getElementById('audio-modal').setAttribute("aria-hidden", "false");
+    // domyślna opcja - soprano jeśli istnieje, inaczej alt itd.
+    const piece = data.find(p => p.id === id);
+    let firstVoice = "soprano";
+    if (!piece.hasSoprano && piece.hasAlto) firstVoice = "alto";
+    if (!piece.hasSoprano && !piece.hasAlto && piece.hasTenor) firstVoice = "tenor";
+    if (!piece.hasSoprano && !piece.hasAlto && !piece.hasTenor && piece.hasBass) firstVoice = "bass";
+    document.getElementById('voice-select').value = firstVoice;
+  }
+  else {
+    document.getElementById('sheet-modal').setAttribute("aria-hidden", "false");
+  }
+  document.body.style.overflow = "hidden";
+}
 
-  // Wypełnij pola select unikalnymi wartościami
-  const authors = [...new Set(allData.map(i => i.author).filter(v => v))];
-  authors.forEach(a => authorSelect.append(new Option(a, a)));
-  const titles = [...new Set(allData.map(i => i.title).filter(v => v))];
-  titles.forEach(t => titleSelect.append(new Option(t, t)));
-  const events = [...new Set(allData.map(i => i.event).filter(v => v))];
-  events.forEach(e => eventSelect.append(new Option(e, e)));
-
-  // Pierwotne filtrowanie i render
-  filterAndRender();
+// Akcje w tabeli
+document.querySelector('.results__body').addEventListener('click', e => {
+  const btn = e.target.closest('button.action-btn');
+  if (!btn) return;
+  openModal(btn.dataset.type, btn.dataset.id);
 });
+
+// Zamknij modale
+document.querySelectorAll('.modal__btn--close').forEach(btn => {
+  btn.addEventListener('click', () => {
+    closeAllModals();
+  });
+});
+
+// Pobierz / Otwórz nuty/audio
+function voiceToLetter(v) {
+  return {soprano: "s", alto: "a", tenor: "t", bass: "b"}[v];
+}
+document.querySelectorAll('.modal__btn--download, .modal__btn--open').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const isSheet = btn.dataset.type === "sheet";
+    const openInNew = btn.classList.contains('modal__btn--open');
+    let url = isSheet
+      ? `https://www.drive.pl/${openInNew ? "play" : "download"}/nuty/${currentPieceId}`
+      : `https://www.drive.pl/${openInNew ? "play" : "download"}/audio/${voiceToLetter(document.getElementById('voice-select').value)}/${currentPieceId}`;
+    if (openInNew) window.open(url, "_blank");
+    else window.location.href = url;
+    closeAllModals();
+  });
+});
+
+// Zmiana głosu w modalu audio — (opcjonalnie można dodać walidację, ale tutaj jest domyślnie)

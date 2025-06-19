@@ -1,68 +1,93 @@
 <!DOCTYPE html>
 <html lang="pl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Choral Searcher</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body class="app objectTheme">
-    <!-- Nagłówkowe kontrolki -->
-    <header class="app__header">
-      <button class="controls__button controls__button--theme-toggle" aria-label="Przełącz motyw">🌙</button>
-      <div class="controls controls--font-size">
-        <button class="controls__button controls__button--font-increase" aria-label="Zwiększ czcionkę">A+</button>
-        <button class="controls__button controls__button--font-decrease" aria-label="Zmniejsz czcionkę">A-</button>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Choral Searcher</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="app">
+  <!-- Kontrolki motywu i czcionki -->
+  <div class="controls controls--theme-font">
+    <button class="controls__button controls__button--theme-toggle" aria-label="Przełącz motyw">
+      <span class="controls__icon">🌙</span>
+    </button>
+    <button class="controls__button controls__button--font-decrease" aria-label="Zmniejsz czcionkę">
+      <span class="controls__icon">A-</span>
+    </button>
+    <button class="controls__button controls__button--font-increase" aria-label="Zwiększ czcionkę">
+      <span class="controls__icon">A+</span>
+    </button>
+  </div>
+
+  <div class="container">
+    <!-- Wyszukiwanie -->
+    <div class="search">
+      <input type="text" class="search__input" placeholder="Wyszukaj tytuł, autora lub wydarzenie..." aria-label="Szukaj">
+    </div>
+
+    <!-- Filtry -->
+    <div class="filters">
+      <label class="filters__label">
+        <input type="checkbox" class="filters__checkbox filters__checkbox--active">
+        <span class="filters__text">Śpiewamy teraz</span>
+      </label>
+      <select class="filters__select filters__select--author" aria-label="Filtruj według autora">
+        <option value="all">Wszyscy autorzy</option>
+      </select>
+      <select class="filters__select filters__select--title" aria-label="Filtruj według tytułu">
+        <option value="all">Wszystkie tytuły</option>
+      </select>
+      <select class="filters__select filters__select--event" aria-label="Filtruj według wydarzenia">
+        <option value="all">Wszystkie wydarzenia</option>
+      </select>
+    </div>
+
+    <!-- Tabela repertuaru -->
+    <div class="results">
+      <div class="results__table-container">
+        <table class="results__table">
+          <thead>
+            <tr>
+              <th class="results__header" data-key="title">Tytuł</th>
+              <th class="results__header" data-key="author">Autor</th>
+              <th class="results__header" data-key="event">Wydarzenie</th>
+              <th class="results__header results__header--actions"></th>
+            </tr>
+          </thead>
+          <tbody class="results__body">
+            <!-- Wiersze dopisze JS -->
+          </tbody>
+        </table>
       </div>
-    </header>
+    </div>
+  </div>
 
-    <!-- Główna zawartość aplikacji -->
-    <main class="app__main">
-      <!-- 1. Sekcja wyszukiwania -->
-      <section class="search">
-        <input type="text" class="search__input" placeholder="Szukaj tytułu, autora lub tagu..." aria-label="Pole wyszukiwania" />
-      </section>
+  <!-- Modale -->
+  <div class="modal" id="sheet-modal" aria-hidden="true">
+    <div class="modal__content">
+      <h2 class="modal__title">Nuty</h2>
+      <button class="modal__btn modal__btn--download" data-type="sheet">Pobierz</button>
+      <button class="modal__btn modal__btn--open" data-type="sheet">Otwórz</button>
+      <button class="modal__btn modal__btn--close">Powrót</button>
+    </div>
+  </div>
 
-      <!-- 2. Sekcja filtrów -->
-      <section class="filters">
-        <label class="filters__label filters__label--singing">
-          <input type="checkbox" class="filters__checkbox filters__checkbox--singing" />
-          <span class="filters__text">śpiewamy teraz</span>
-        </label>
+  <div class="modal" id="audio-modal" aria-hidden="true">
+    <div class="modal__content">
+      <h2 class="modal__title">Materiały audio</h2>
+      <select class="modal__select" id="voice-select">
+        <option value="soprano">Sopran</option>
+        <option value="alto">Alt</option>
+        <option value="tenor">Tenor</option>
+        <option value="bass">Bas</option>
+      </select>
+      <button class="modal__btn modal__btn--download" data-type="audio">Pobierz</button>
+      <button class="modal__btn modal__btn--open" data-type="audio">Otwórz</button>
+      <button class="modal__btn modal__btn--close">Powrót</button>
+    </div>
+  </div>
 
-        <select class="filters__select filters__select--author" aria-label="Filtruj według autora">
-          <option value="">Wszyscy autorzy</option>
-        </select>
-
-        <select class="filters__select filters__select--title" aria-label="Filtruj według tytułu">
-          <option value="">Wszystkie tytuły</option>
-        </select>
-
-        <select class="filters__select filters__select--event" aria-label="Filtruj według wydarzenia">
-          <option value="">Wszystkie wydarzenia</option>
-        </select>
-      </section>
-
-      <!-- 3. Sekcja wyników -->
-      <section class="results">
-        <div class="results__table-container objectTheme">
-          <table class="results__table">
-            <thead class="results__header">
-              <tr class="results__row results__row--header">
-                <th class="results__cell results__cell--header results__cell--title" scope="col">Tytuł</th>
-                <th class="results__cell results__cell--header results__cell--author" scope="col">Autor</th>
-                <th class="results__cell results__cell--header results__cell--event" scope="col">Wydarzenie</th>
-                <th class="results__cell results__cell--header results__cell--actions" scope="col"></th>
-              </tr>
-            </thead>
-            <tbody class="results__body">
-              <!-- Wiersze będą dodawane dynamicznie przez script.js -->
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-
-    <script src="script.js" defer></script>
-  </body>
+  <script src="script.js" defer></script>
+</body>
 </html>
