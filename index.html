@@ -1,73 +1,68 @@
 <!DOCTYPE html>
 <html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Choral Searcher</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body class="app">
-  <!-- Nagłówkowe kontrolki -->
-  <header class="app__header">
-    <button class="controls__button controls__button--theme-toggle" aria-label="Przełącz motyw">🌙</button>
-    <div class="controls controls--font-size">
-      <button class="controls__button controls__button--font-increase" aria-label="Zwiększ czcionkę">A+</button>
-      <button class="controls__button controls__button--font-decrease" aria-label="Zmniejsz czcionkę">A-</button>
-    </div>
-  </header>
-
-  <!-- Główna zawartość aplikacji -->
-  <main class="app__main">
-    <!-- 1. Sekcja wyszukiwania -->
-    <section class="search">
-      <input
-        type="text"
-        class="search__input"
-        placeholder="Szukaj tytułu, autora lub tagu..."
-        aria-label="Pole wyszukiwania"
-      >
-    </section>
-
-    <!-- 2. Sekcja filtrów -->
-    <section class="filters">
-      <label class="filters__label filters__label--singing">
-        <input type="checkbox" class="filters__checkbox filters__checkbox--singing">
-        <span class="filters__text">śpiewamy teraz</span>
-      </label>
-
-      <select class="filters__select filters__select--author" aria-label="Filtruj według autora">
-        <option value="">Wszyscy autorzy</option>
-      </select>
-
-      <select class="filters__select filters__select--title" aria-label="Filtruj według tytułu">
-        <option value="">Wszystkie tytuły</option>
-      </select>
-
-      <select class="filters__select filters__select--event" aria-label="Filtruj według wydarzenia">
-        <option value="">Wszystkie wydarzenia</option>
-      </select>
-    </section>
-
-    <!-- 3. Sekcja wyników -->
-    <section class="results">
-      <div class="results__table-container">
-        <table class="results__table">
-          <thead class="results__header">
-            <tr class="results__row results__row--header">
-              <th class="results__cell results__cell--header results__cell--title" scope="col">Tytuł</th>
-              <th class="results__cell results__cell--header results__cell--author" scope="col">Autor</th>
-              <th class="results__cell results__cell--header results__cell--event" scope="col">Wydarzenie</th>
-              <th class="results__cell results__cell--header results__cell--actions" scope="col"></th>
-            </tr>
-          </thead>
-          <tbody class="results__body">
-            <!-- Wiersze będą dodawane dynamicznie przez script.js -->
-          </tbody>
-        </table>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Choral Searcher</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="app">
+    <!-- Nagłówkowe kontrolki -->
+    <header class="app__header">
+      <button class="controls__button controls__button--theme-toggle" aria-label="Przełącz motyw">🌙</button>
+      <div class="controls controls--font-size">
+        <button class="controls__button controls__button--font-increase" aria-label="Zwiększ czcionkę">A+</button>
+        <button class="controls__button controls__button--font-decrease" aria-label="Zmniejsz czcionkę">A-</button>
       </div>
-    </section>
-  </main>
+    </header>
 
-  <script src="script.js" defer></script>
-</body>
+    <!-- Główna zawartość aplikacji -->
+    <main class="app__main">
+      <!-- 1. Sekcja wyszukiwania -->
+      <section class="search">
+        <input type="text" class="search__input" placeholder="Szukaj tytułu, autora lub tagu..." aria-label="Pole wyszukiwania" />
+      </section>
+
+      <!-- 2. Sekcja filtrów -->
+      <section class="filters">
+        <label class="filters__label filters__label--singing">
+          <input type="checkbox" class="filters__checkbox filters__checkbox--singing" />
+          <span class="filters__text">śpiewamy teraz</span>
+        </label>
+
+        <select class="filters__select filters__select--author" aria-label="Filtruj według autora">
+          <option value="">Wszyscy autorzy</option>
+        </select>
+
+        <select class="filters__select filters__select--title" aria-label="Filtruj według tytułu">
+          <option value="">Wszystkie tytuły</option>
+        </select>
+
+        <select class="filters__select filters__select--event" aria-label="Filtruj według wydarzenia">
+          <option value="">Wszystkie wydarzenia</option>
+        </select>
+      </section>
+
+      <!-- 3. Sekcja wyników -->
+      <section class="results">
+        <div class="results__table-container">
+          <table class="results__table">
+            <thead class="results__header">
+              <tr class="results__row results__row--header">
+                <th class="results__cell results__cell--header results__cell--title" scope="col">Tytuł</th>
+                <th class="results__cell results__cell--header results__cell--author" scope="col">Autor</th>
+                <th class="results__cell results__cell--header results__cell--event" scope="col">Wydarzenie</th>
+                <th class="results__cell results__cell--header results__cell--actions" scope="col"></th>
+              </tr>
+            </thead>
+            <tbody class="results__body">
+              <!-- Wiersze będą dodawane dynamicznie przez script.js -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js" defer></script>
+  </body>
 </html>
