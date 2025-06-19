@@ -121,6 +121,35 @@ function addRow(item) {
   tableBody.appendChild(tr);
 }
 
+// Tworzy i wyświetla modal blokujący całą stronę
+function createModal(innerHtml) {
+  // Zablokuj scroll tła
+  document.body.style.overflow = 'hidden';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+
+  const box = document.createElement('div');
+  box.className = 'modal-box';
+  box.innerHTML = innerHtml;
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  // Zamknięcie tylko przyciskiem "Wróć"
+  const backBtn = box.querySelector('#back');
+  if (backBtn) backBtn.addEventListener('click', () => closeModal(overlay));
+
+  return overlay;
+}
+
+// Zamknięcie modalu i odblokowanie scrolla
+function closeModal(overlay) {
+  document.body.removeChild(overlay);
+  document.body.style.overflow = '';
+}
+
+
 // Modal do nut
 function openSheetModal(id) {
   const modal = createModal(`
