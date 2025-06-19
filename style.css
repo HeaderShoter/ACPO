@@ -31,10 +31,14 @@ html.dark .controls__button--font-decrease {
 
 body.app {
   max-width: 1000px;
-  margin: auto;
+  margin: 30px auto;
   padding-left: 15px;
   padding-right: 15px;
   background-color: var(--color-bg);
+  /* background-image: url("https://scontent-vie1-1.xx.fbcdn.net/v/t39.30808-6/501445732_23976972495261358_1734566281835907952_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=2285d6&_nc_ohc=08L0U143dzMQ7kNvwFUzuSi&_nc_oc=AdkPYZF3-ZdTqjTMoxhrCnFCi2htEnj7IzyR9yuF550dY4qi8B3SNEzpDikutbXQdrU&_nc_zt=23&_nc_ht=scontent-vie1-1.xx&_nc_gid=Vyu-gR34VyX8nEJyayh1vg&oh=00_AfMwgOK2fCQ6JQQBPJn8x-OCIi05iJRenMFQ8XYVyheAPA&oe=68595BA0");
+  background-position: center;
+  background-size: 1800px;
+  background-attachment: fixed; */
   color: var(--color-text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
@@ -44,10 +48,9 @@ body.app {
 
 .objectTheme {
   padding: 5px;
-  margin-top: 30px;
   border-radius: 10px;
   border: solid 3px rgb(255, 108, 108);
-  background-color: rgb(255, 205, 205);
+  background-color: rgb(255, 255, 255);
   color: black;
   box-shadow: 6px 6px 22px -10px #2d2d2d;
 }
