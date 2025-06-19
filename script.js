@@ -275,11 +275,23 @@ function openModal(type, id) {
   if (type === "audio") {
     document.getElementById('audio-modal').setAttribute("aria-hidden", "false");
     const piece = data.find(p => p.id === id);
-    let firstVoice = "soprano";
-    if (!piece.hasSoprano && piece.hasAlto) firstVoice = "alto";
-    if (!piece.hasSoprano && !piece.hasAlto && piece.hasTenor) firstVoice = "tenor";
-    if (!piece.hasSoprano && !piece.hasAlto && !piece.hasTenor && piece.hasBass) firstVoice = "bass";
-    document.getElementById('voice-select').value = firstVoice;
+    // Wypełnij select dostępnych głosów
+    const select = document.getElementById('voice-select');
+    select.innerHTML = ""; // wyczyść stare opcje
+    const voiceLabels = { soprano: "Sopran", alto: "Alt", tenor: "Tenor", bass: "Bas" };
+    const voiceToIdx = { soprano: 0, alto: 1, tenor: 2, bass: 3 };
+    let firstAvailable = null;
+    for (const [voice, idx] of Object.entries(voiceToIdx)) {
+      if (piece.audioUrls[idx]) {
+        const opt = document.createElement('option');
+        opt.value = voice;
+        opt.textContent = voiceLabels[voice];
+        select.appendChild(opt);
+        if (!firstAvailable) firstAvailable = voice;
+      }
+    }
+    // Ustaw domyślnie pierwszy dostępny głos
+    if (firstAvailable) select.value = firstAvailable;
   }
   else {
     document.getElementById('sheet-modal').setAttribute("aria-hidden", "false");

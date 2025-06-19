@@ -1,98 +1,93 @@
 <!DOCTYPE html>
 <html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Choral Searcher</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body class="app">
-  <!-- Kontrolki motywu i czcionki -->
-  <div class="controls controls--theme-font">
-    <button class="controls__button controls__button--theme-toggle" aria-label="Przełącz motyw">
-      <span class="controls__icon">🌙</span>
-    </button>
-    <button class="controls__button controls__button--font-decrease" aria-label="Zmniejsz czcionkę">
-      <span class="controls__icon">A-</span>
-    </button>
-    <button class="controls__button controls__button--font-increase" aria-label="Zwiększ czcionkę">
-      <span class="controls__icon">A+</span>
-    </button>
-  </div>
-
-  <div class="container">
-    <!-- Wyszukiwanie -->
-    <div class="search">
-      <input type="text" class="search__input" placeholder="Wyszukaj tytuł, autora, aranżera, gatunek lub wydarzenie..." aria-label="Szukaj">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Choral Searcher</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="app">
+    <!-- Kontrolki motywu i czcionki -->
+    <div class="controls controls--theme-font">
+      <button class="controls__button controls__button--theme-toggle" aria-label="Przełącz motyw">
+        <span class="controls__icon">🌙</span>
+      </button>
+      <button class="controls__button controls__button--font-decrease" aria-label="Zmniejsz czcionkę">
+        <span class="controls__icon">A-</span>
+      </button>
+      <button class="controls__button controls__button--font-increase" aria-label="Zwiększ czcionkę">
+        <span class="controls__icon">A+</span>
+      </button>
     </div>
 
-    <!-- Filtry -->
-    <div class="filters">
-      <label class="filters__label">
-        <input type="checkbox" class="filters__checkbox filters__checkbox--active">
-        <span class="filters__text">Śpiewamy teraz</span>
-      </label>
-      <select class="filters__select filters__select--author" aria-label="Filtruj według autora">
-        <option value="all">Wszyscy autorzy</option>
-      </select>
-      <select class="filters__select filters__select--arranger" aria-label="Filtruj według aranżera">
-        <option value="all">Wszyscy aranżerzy</option>
-      </select>
-      <select class="filters__select filters__select--genre" aria-label="Filtruj według gatunku">
-        <option value="all">Wszystkie gatunki</option>
-      </select>
-      <select class="filters__select filters__select--event" aria-label="Filtruj według wydarzenia">
-        <option value="all">Wszystkie wydarzenia</option>
-      </select>
-    </div>
+    <div class="container">
+      <!-- Wyszukiwanie -->
+      <div class="search">
+        <input type="text" class="search__input" placeholder="🔎 Wyszukaj..." aria-label="Szukaj" />
+      </div>
 
-    <!-- Tabela repertuaru -->
-    <div class="results">
-      <div class="results__table-container">
-        <table class="results__table">
-          <thead>
-            <tr>
-              <th class="results__header" data-key="title">Tytuł</th>
-              <th class="results__header" data-key="author">Autor</th>
-              <th class="results__header" data-key="arranger">Aranżer</th>
-              <th class="results__header" data-key="genre">Gatunek</th>
-              <th class="results__header" data-key="event">Wydarzenie</th>
-              <th class="results__header results__header--actions"></th>
-            </tr>
-          </thead>
-          <tbody class="results__body">
-            <!-- Wiersze dopisze JS -->
-          </tbody>
-        </table>
+      <!-- Filtry -->
+      <div class="filters">
+        <label class="filters__label">
+          <input type="checkbox" class="filters__checkbox filters__checkbox--active" />
+          <span class="filters__text">Śpiewamy teraz</span>
+        </label>
+        <select class="filters__select filters__select--author" aria-label="Filtruj według autora">
+          <option value="all">Wszyscy autorzy</option>
+        </select>
+        <select class="filters__select filters__select--arranger" aria-label="Filtruj według aranżera">
+          <option value="all">Wszyscy aranżerzy</option>
+        </select>
+        <select class="filters__select filters__select--genre" aria-label="Filtruj według gatunku">
+          <option value="all">Wszystkie gatunki</option>
+        </select>
+        <select class="filters__select filters__select--event" aria-label="Filtruj według wydarzenia">
+          <option value="all">Wszystkie wydarzenia</option>
+        </select>
+      </div>
+
+      <!-- Tabela repertuaru -->
+      <div class="results">
+        <div class="results__table-container">
+          <table class="results__table">
+            <thead>
+              <tr>
+                <th class="results__header" data-key="title">Tytuł</th>
+                <th class="results__header" data-key="author">Autor</th>
+                <th class="results__header" data-key="arranger">Aranżer</th>
+                <th class="results__header" data-key="genre">Gatunek</th>
+                <th class="results__header" data-key="event">Wydarzenie</th>
+                <th class="results__header results__header--actions"></th>
+              </tr>
+            </thead>
+            <tbody class="results__body">
+              <!-- Wiersze dopisze JS -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Modale -->
-  <div class="modal" id="sheet-modal" aria-hidden="true">
-    <div class="modal__content">
-      <h2 class="modal__title">Nuty</h2>
-      <button class="modal__btn modal__btn--download" data-type="sheet">Pobierz</button>
-      <button class="modal__btn modal__btn--open" data-type="sheet">Otwórz</button>
-      <button class="modal__btn modal__btn--close">Powrót</button>
+    <!-- Modale -->
+    <div class="modal" id="sheet-modal" aria-hidden="true">
+      <div class="modal__content">
+        <h2 class="modal__title">Nuty</h2>
+        <button class="modal__btn modal__btn--download" data-type="sheet">Pobierz</button>
+        <button class="modal__btn modal__btn--open" data-type="sheet">Otwórz</button>
+        <button class="modal__btn modal__btn--close">Powrót</button>
+      </div>
     </div>
-  </div>
 
-  <div class="modal" id="audio-modal" aria-hidden="true">
-    <div class="modal__content">
-      <h2 class="modal__title">Materiały audio</h2>
-      <select class="modal__select" id="voice-select">
-        <option value="soprano">Sopran</option>
-        <option value="alto">Alt</option>
-        <option value="tenor">Tenor</option>
-        <option value="bass">Bas</option>
-      </select>
-      <button class="modal__btn modal__btn--download" data-type="audio">Pobierz</button>
-      <button class="modal__btn modal__btn--open" data-type="audio">Otwórz</button>
-      <button class="modal__btn modal__btn--close">Powrót</button>
+    <div class="modal" id="audio-modal" aria-hidden="true">
+      <div class="modal__content">
+        <h2 class="modal__title">Śpiewanki</h2>
+        <select class="modal__select" id="voice-select"></select>
+        <button class="modal__btn modal__btn--download" data-type="audio">Pobierz</button>
+        <button class="modal__btn modal__btn--open" data-type="audio">Otwórz</button>
+        <button class="modal__btn modal__btn--close">Powrót</button>
+      </div>
     </div>
-  </div>
 
-  <script src="script.js" defer></script>
-</body>
+    <script src="script.js" defer></script>
+  </body>
 </html>
