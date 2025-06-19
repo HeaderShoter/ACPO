@@ -1,49 +1,33 @@
-// Dane przykładowe (jak w mockData z lovable.dev)
-const data = [
-  {
-    id: "001",
-    title: "Ave Maria",
-    author: "Franz Schubert",
-    event: "Koncert Bożonarodzeniowy",
-    status: 1,
-    hasSheetMusic: true,
-    hasSoprano: true,
-    hasAlto: true,
-    hasTenor: false,
-    hasBass: true
-  },
-  {
-    id: "002",
-    title: "Hallelujah",
-    author: "Leonard Cohen",
-    event: "Koncert Wiosenny",
-    status: 0,
-    hasSheetMusic: true,
-    hasSoprano: true,
-    hasAlto: true,
-    hasTenor: true,
-    hasBass: true
-  },
-  {
-    id: "003",
-    title: "Lux Aeterna",
-    author: "Morten Lauridsen",
-    event: "Festiwal Muzyki Chóralnej",
-    status: 1,
-    hasSheetMusic: false,
-    hasSoprano: true,
-    hasAlto: false,
-    hasTenor: true,
-    hasBass: false
-  }
-];
-
+let data = [];
 let sortColumn = "title";
 let sortDirection = "asc";
 let currentFontSize = 16;
 
+const sheetId = "1p08YqPtheg66-0BuI5MvefcZJ7xMRqqXsJ4998naSUA";
+const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+
+// ------------- Google Sheets loader -------------
+async function fetchData() {
+  const res = await fetch(sheetUrl);
+  const text = await res.text();
+  const json = JSON.parse(text.slice(47, -2));
+  // Kolumny: 0=id, 1=title, 2=author, 3=event, 4=status, 5=hasSheet, 6-9=s,a,t,b
+  return json.table.rows.map(r => ({
+    id: r.c[0]?.v ?? "",
+    title: r.c[1]?.v ?? "",
+    author: r.c[2]?.v ?? "",
+    event: r.c[3]?.v ?? "",
+    status: Number(r.c[4]?.v) || 0,
+    hasSheetMusic: !!r.c[5]?.v,
+    hasSoprano: !!r.c[6]?.v,
+    hasAlto: !!r.c[7]?.v,
+    hasTenor: !!r.c[8]?.v,
+    hasBass: !!r.c[9]?.v
+  }));
+}
+
 // Preferencje z localStorage
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const savedTheme = localStorage.getItem("choir-theme");
   if (savedTheme === "dark") document.documentElement.classList.add("dark");
 
@@ -53,6 +37,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.documentElement.style.fontSize = currentFontSize + "px";
   }
 
+  // Poczekaj na dane z Google Sheets
+  data = await fetchData();
   renderFilters();
   renderTable();
 });
@@ -78,7 +64,7 @@ document.querySelector('.controls__button--font-decrease').onclick = () => {
 
 // ----------- Normalizacja tekstu dla wyszukiwarki ---------
 function normalizeText(str) {
-  return str
+  return (str||"")
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -97,9 +83,9 @@ function fuzzyMatch(searchTerm, targetText) {
 
 // ----------- Wypełnianie selectów filtrujących ---------
 function renderFilters() {
-  const authorSet = new Set(data.map(x => x.author));
-  const titleSet = new Set(data.map(x => x.title));
-  const eventSet = new Set(data.map(x => x.event));
+  const authorSet = new Set(data.map(x => x.author).filter(Boolean));
+  const titleSet = new Set(data.map(x => x.title).filter(Boolean));
+  const eventSet = new Set(data.map(x => x.event).filter(Boolean));
   fillSelect('.filters__select--author', ["Wszyscy autorzy", ...[...authorSet]], ["all", ...[...authorSet]]);
   fillSelect('.filters__select--title', ["Wszystkie tytuły", ...[...titleSet]], ["all", ...[...titleSet]]);
   fillSelect('.filters__select--event', ["Wszystkie wydarzenia", ...[...eventSet]], ["all", ...[...eventSet]]);
@@ -245,5 +231,3 @@ document.querySelectorAll('.modal__btn--download, .modal__btn--open').forEach(bt
     closeAllModals();
   });
 });
-
-// Zmiana głosu w modalu audio — (opcjonalnie można dodać walidację, ale tutaj jest domyślnie)
