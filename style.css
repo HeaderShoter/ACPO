@@ -32,7 +32,7 @@ body.app {
 
 .container {
   max-width: 1000px;
-  margin: 60px auto 0 auto;
+  margin: 70px auto 0 auto;
   padding: 24px 16px 40px 16px;
 }
 
@@ -142,7 +142,7 @@ html.dark .filters__select {
 }
 
 .results__table-container {
-  max-height: 390px;
+  min-height: 320px;
   overflow-y: auto;
   border-radius: var(--radius);
   border: 2px solid var(--border-light);
@@ -202,7 +202,7 @@ html.dark .results__body tr:hover {
   background: #233c64;
 }
 .results__body td {
-  padding: 8px 20px;
+  padding: 8px 20px 8px 8px;
   font-size: 0.98rem;
   color: var(--text-light);
   border-bottom: 1px solid var(--border-light);

@@ -166,7 +166,7 @@ function setupAllEventListeners() {
 // ---- Filtry, renderowanie, wyszukiwanie ----
 
 function normalizeText(str) {
-  return (str||"")
+  return (str || "")
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -247,15 +247,15 @@ function renderTable() {
   rows.forEach(piece => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
+      <td class="results__cell--actions">
+        ${piece.hasSheetMusic ? `<button class="action-btn" data-type="sheet" data-id="${piece.id}">🎼</button>` : ""}
+        ${(piece.hasSoprano || piece.hasAlto || piece.hasTenor || piece.hasBass) ? `<button class="action-btn" data-type="audio" data-id="${piece.id}">🔊</button>` : ""}
+      </td>  
       <td>${piece.title}</td>
       <td>${piece.author}</td>
       <td>${piece.arranger}</td>
       <td>${piece.genre}</td>
       <td>${piece.event}</td>
-      <td class="results__cell--actions">
-        ${piece.hasSheetMusic ? `<button class="action-btn" data-type="sheet" data-id="${piece.id}">🎼</button>` : ""}
-        ${(piece.hasSoprano || piece.hasAlto || piece.hasTenor || piece.hasBass) ? `<button class="action-btn" data-type="audio" data-id="${piece.id}">🔊</button>` : ""}
-      </td>
     `;
     tbody.appendChild(tr);
   });
