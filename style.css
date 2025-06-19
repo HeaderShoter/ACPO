@@ -168,6 +168,7 @@ html.dark .results__table-container {
   top: 0;
   transition: background 0.2s, color 0.2s;
   z-index: 1;
+  text-align: left;
 }
 .results__header--actions {
   width: 85px;

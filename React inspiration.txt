@@ -1,0 +1,484 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { Search, Download, Play, ArrowLeft, Minus, Plus, Sun, Moon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+// Mock data structure based on Google Sheets format
+interface Piece {
+  id: string;
+  title: string;
+  author: string;
+  event: string;
+  status: number;
+  hasSheetMusic: boolean;
+  hasSoprano: boolean;
+  hasAlto: boolean;
+  hasTenor: boolean;
+  hasBass: boolean;
+}
+
+// Mock data - in real implementation this would come from Google Sheets API
+const mockData: Piece[] = [
+  {
+    id: "001",
+    title: "Ave Maria",
+    author: "Franz Schubert",
+    event: "Koncert Bożonarodzeniowy",
+    status: 1,
+    hasSheetMusic: true,
+    hasSoprano: true,
+    hasAlto: true,
+    hasTenor: false,
+    hasBass: true
+  },
+  {
+    id: "002",
+    title: "Hallelujah",
+    author: "Leonard Cohen",
+    event: "Koncert Wiosenny",
+    status: 0,
+    hasSheetMusic: true,
+    hasSoprano: true,
+    hasAlto: true,
+    hasTenor: true,
+    hasBass: true
+  },
+  {
+    id: "003",
+    title: "Lux Aeterna",
+    author: "Morten Lauridsen",
+    event: "Festiwal Muzyki Chóralnej",
+    status: 1,
+    hasSheetMusic: false,
+    hasSoprano: true,
+    hasAlto: false,
+    hasTenor: true,
+    hasBass: false
+  }
+];
+
+const Index = () => {
+  // State management
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentlyActive, setCurrentlyActive] = useState(false);
+  const [authorFilter, setAuthorFilter] = useState('');
+  const [titleFilter, setTitleFilter] = useState('');
+  const [eventFilter, setEventFilter] = useState('');
+  const [sortColumn, setSortColumn] = useState<'title' | 'author' | 'event'>('title');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [fontSize, setFontSize] = useState(16);
+  const [sheetMusicDialog, setSheetMusicDialog] = useState<{ open: boolean; pieceId: string }>({ open: false, pieceId: '' });
+  const [audioDialog, setAudioDialog] = useState<{ open: boolean; pieceId: string; selectedVoice: string }>({ open: false, pieceId: '', selectedVoice: 'soprano' });
+
+  // Load user preferences from localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('choir-theme');
+    const savedFontSize = localStorage.getItem('choir-font-size');
+    
+    if (savedTheme === 'dark') {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    }
+    
+    if (savedFontSize) {
+      setFontSize(parseInt(savedFontSize));
+    }
+  }, []);
+
+  // Apply font size to document
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${fontSize}px`;
+  }, [fontSize]);
+
+  // Theme toggle handler
+  const toggleTheme = () => {
+    const newTheme = !isDarkMode;
+    setIsDarkMode(newTheme);
+    if (newTheme) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('choir-theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('choir-theme', 'light');
+    }
+  };
+
+  // Font size handlers
+  const increaseFontSize = () => {
+    const newSize = Math.min(fontSize + 2, 24);
+    setFontSize(newSize);
+    localStorage.setItem('choir-font-size', newSize.toString());
+  };
+
+  const decreaseFontSize = () => {
+    const newSize = Math.max(fontSize - 2, 12);
+    setFontSize(newSize);
+    localStorage.setItem('choir-font-size', newSize.toString());
+  };
+
+  // Checkbox change handler that properly handles CheckedState
+  const handleCurrentlyActiveChange = (checked: boolean | "indeterminate") => {
+    setCurrentlyActive(checked === true);
+  };
+
+  // Utility function to remove Polish diacritics and normalize text
+  const normalizeText = (text: string): string => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[łŁ]/g, 'l')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  // Advanced search function with typo tolerance
+  const fuzzyMatch = (searchTerm: string, targetText: string): boolean => {
+    const normalizedSearch = normalizeText(searchTerm);
+    const normalizedTarget = normalizeText(targetText);
+    
+    // Exact match
+    if (normalizedTarget.includes(normalizedSearch)) return true;
+    
+    // Word-by-word match
+    const searchWords = normalizedSearch.split(' ').filter(word => word.length > 0);
+    return searchWords.every(word => normalizedTarget.includes(word));
+  };
+
+  // Filter and sort data
+  const filteredAndSortedData = useMemo(() => {
+    let filtered = mockData.filter(piece => {
+      // Search filter
+      if (searchTerm) {
+        const matchesSearch = fuzzyMatch(searchTerm, piece.title) ||
+                            fuzzyMatch(searchTerm, piece.author) ||
+                            fuzzyMatch(searchTerm, piece.event);
+        if (!matchesSearch) return false;
+      }
+
+      // Currently active filter
+      if (currentlyActive && piece.status !== 1) return false;
+
+      // Dropdown filters
+      if (authorFilter && authorFilter !== 'all' && piece.author !== authorFilter) return false;
+      if (titleFilter && titleFilter !== 'all' && piece.title !== titleFilter) return false;
+      if (eventFilter && eventFilter !== 'all' && piece.event !== eventFilter) return false;
+
+      return true;
+    });
+
+    // Sort data
+    filtered.sort((a, b) => {
+      let aValue = a[sortColumn];
+      let bValue = b[sortColumn];
+      
+      if (sortDirection === 'asc') {
+        return aValue.localeCompare(bValue, 'pl');
+      } else {
+        return bValue.localeCompare(aValue, 'pl');
+      }
+    });
+
+    return filtered;
+  }, [searchTerm, currentlyActive, authorFilter, titleFilter, eventFilter, sortColumn, sortDirection]);
+
+  // Get unique values for dropdowns
+  const uniqueAuthors = [...new Set(mockData.map(piece => piece.author))].sort();
+  const uniqueTitles = [...new Set(mockData.map(piece => piece.title))].sort();
+  const uniqueEvents = [...new Set(mockData.map(piece => piece.event))].sort();
+
+  // Sort handler
+  const handleSort = (column: 'title' | 'author' | 'event') => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  // Download and open handlers
+  const handleDownload = (type: 'sheet' | 'audio', pieceId: string, voice?: string) => {
+    let url = 'https://www.drive.pl/download';
+    if (type === 'sheet') {
+      url += `/nuty/${pieceId}`;
+    } else {
+      const voiceMap = { soprano: 's', alto: 'a', tenor: 't', bass: 'b' };
+      url += `/audio/${voiceMap[voice as keyof typeof voiceMap]}/${pieceId}`;
+    }
+    window.location.href = url;
+  };
+
+  const handleOpen = (type: 'sheet' | 'audio', pieceId: string, voice?: string) => {
+    let url = 'https://www.drive.pl/play';
+    if (type === 'sheet') {
+      url += `/nuty/${pieceId}`;
+    } else {
+      const voiceMap = { soprano: 's', alto: 'a', tenor: 't', bass: 'b' };
+      url += `/audio/${voiceMap[voice as keyof typeof voiceMap]}/${pieceId}`;
+    }
+    window.open(url, '_blank');
+  };
+
+  return (
+    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+      {/* Theme and Font Controls */}
+      <div className="fixed top-4 left-4 z-50">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={toggleTheme}
+          className="h-12 w-12 rounded-full bg-white/80 backdrop-blur-sm border-2 hover:bg-white dark:bg-gray-800/80 dark:hover:bg-gray-800"
+        >
+          {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        </Button>
+      </div>
+
+      <div className="fixed top-4 right-4 z-50 flex gap-2">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={decreaseFontSize}
+          className="h-12 w-12 rounded-full bg-white/80 backdrop-blur-sm border-2 hover:bg-white dark:bg-gray-800/80 dark:hover:bg-gray-800"
+        >
+          <Minus className="h-5 w-5" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={increaseFontSize}
+          className="h-12 w-12 rounded-full bg-white/80 backdrop-blur-sm border-2 hover:bg-white dark:bg-gray-800/80 dark:hover:bg-gray-800"
+        >
+          <Plus className="h-5 w-5" />
+        </Button>
+      </div>
+
+      {/* Main Container */}
+      <div className="container mx-auto px-4 py-8 pt-20 max-w-6xl">
+        <div className="space-y-6">
+          {/* Search Field */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <Input
+                type="text"
+                placeholder="Wyszukaj tytuł, autora lub wydarzenie..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-12 h-12 text-lg rounded-xl border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
+              />
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="currently-active"
+                  checked={currentlyActive}
+                  onCheckedChange={handleCurrentlyActiveChange}
+                  className="h-5 w-5"
+                />
+                <label htmlFor="currently-active" className="text-sm font-medium cursor-pointer">
+                  Śpiewamy teraz
+                </label>
+              </div>
+
+              <Select value={authorFilter} onValueChange={setAuthorFilter}>
+                <SelectTrigger className="h-10 rounded-lg">
+                  <SelectValue placeholder="Autor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Wszyscy autorzy</SelectItem>
+                  {uniqueAuthors.map(author => (
+                    <SelectItem key={author} value={author}>{author}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={titleFilter} onValueChange={setTitleFilter}>
+                <SelectTrigger className="h-10 rounded-lg">
+                  <SelectValue placeholder="Tytuł" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Wszystkie tytuły</SelectItem>
+                  {uniqueTitles.map(title => (
+                    <SelectItem key={title} value={title}>{title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={eventFilter} onValueChange={setEventFilter}>
+                <SelectTrigger className="h-10 rounded-lg">
+                  <SelectValue placeholder="Wydarzenie" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Wszystkie wydarzenia</SelectItem>
+                  {uniqueEvents.map(event => (
+                    <SelectItem key={event} value={event}>{event}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Repertoire Table */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="max-h-96 overflow-y-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
+                  <tr>
+                    <th
+                      className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                      onClick={() => handleSort('title')}
+                    >
+                      Tytuł {sortColumn === 'title' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th
+                      className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                      onClick={() => handleSort('author')}
+                    >
+                      Autor {sortColumn === 'author' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th
+                      className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                      onClick={() => handleSort('event')}
+                    >
+                      Wydarzenie {sortColumn === 'event' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAndSortedData.map((piece, index) => (
+                    <tr
+                      key={piece.id}
+                      className={`${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'} hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors`}
+                    >
+                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">{piece.title}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">{piece.author}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">{piece.event}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex justify-center gap-2">
+                          {piece.hasSheetMusic && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setSheetMusicDialog({ open: true, pieceId: piece.id })}
+                              className="h-10 w-10 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {(piece.hasSoprano || piece.hasAlto || piece.hasTenor || piece.hasBass) && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setAudioDialog({ open: true, pieceId: piece.id, selectedVoice: 'soprano' })}
+                              className="h-10 w-10 rounded-lg hover:bg-green-50 dark:hover:bg-green-900"
+                            >
+                              <Play className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sheet Music Dialog */}
+      <Dialog open={sheetMusicDialog.open} onOpenChange={(open) => setSheetMusicDialog({ open, pieceId: '' })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nuty</DialogTitle>
+          </DialogHeader>
+          <div className="flex gap-3 justify-center">
+            <Button
+              onClick={() => handleDownload('sheet', sheetMusicDialog.pieceId)}
+              className="flex-1"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Pobierz
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleOpen('sheet', sheetMusicDialog.pieceId)}
+              className="flex-1"
+            >
+              <Play className="h-4 w-4 mr-2" />
+              Otwórz
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setSheetMusicDialog({ open: false, pieceId: '' })}
+              className="flex-1"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Powrót
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Audio Dialog */}
+      <Dialog open={audioDialog.open} onOpenChange={(open) => setAudioDialog({ open, pieceId: '', selectedVoice: 'soprano' })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Materiały audio</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Select value={audioDialog.selectedVoice} onValueChange={(value) => setAudioDialog({ ...audioDialog, selectedVoice: value })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="soprano">Soprano</SelectItem>
+                <SelectItem value="alto">Alto</SelectItem>
+                <SelectItem value="tenor">Tenor</SelectItem>
+                <SelectItem value="bass">Bass</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex gap-3 justify-center">
+              <Button
+                onClick={() => handleDownload('audio', audioDialog.pieceId, audioDialog.selectedVoice)}
+                className="flex-1"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Pobierz
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleOpen('audio', audioDialog.pieceId, audioDialog.selectedVoice)}
+                className="flex-1"
+              >
+                <Play className="h-4 w-4 mr-2" />
+                Otwórz
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setAudioDialog({ open: false, pieceId: '', selectedVoice: 'soprano' })}
+                className="flex-1"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Powrót
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default Index;

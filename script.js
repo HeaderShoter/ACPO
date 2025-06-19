@@ -19,18 +19,25 @@ async function fetchData() {
     event: r.c[4]?.v ?? "",
     status: Number(r.c[5]?.v) || 0,
     sheetUrl: r.c[6]?.v ?? "", // G
-    audioUrls: [
-      r.c[7]?.v ?? "", // H - soprano
-      r.c[8]?.v ?? "", // I - alto
-      r.c[9]?.v ?? "", // J - tenor
-      r.c[10]?.v ?? "" // K - bass
-    ],
+    audioUrls: {
+      soprano:   r.c[7]?.v ?? "",
+      soprano2:  r.c[8]?.v ?? "",
+      alto:      r.c[9]?.v ?? "",
+      alto2:     r.c[10]?.v ?? "",
+      tenor:     r.c[11]?.v ?? "",
+      baryton:   r.c[12]?.v ?? "",
+      bass:      r.c[13]?.v ?? "",
+      demo:      r.c[14]?.v ?? ""
+    },
     hasSheetMusic: !!r.c[6]?.v,
     hasSoprano: !!r.c[7]?.v,
-    hasAlto: !!r.c[8]?.v,
-    hasTenor: !!r.c[9]?.v,
-    hasBass: !!r.c[10]?.v,
-    // ID syntetyczne z najważniejszych pól (unikalne na potrzeby działania modali)
+    hasSoprano2: !!r.c[8]?.v,
+    hasAlto: !!r.c[9]?.v,
+    hasAlto2: !!r.c[10]?.v,
+    hasTenor: !!r.c[11]?.v,
+    hasBaryton: !!r.c[12]?.v,
+    hasBass: !!r.c[13]?.v,
+    hasDemo: !!r.c[14]?.v,
     id: `${r.c[0]?.v ?? ""}|${r.c[1]?.v ?? ""}|${r.c[2]?.v ?? ""}|${r.c[3]?.v ?? ""}|${r.c[4]?.v ?? ""}`
   }));
 }
@@ -130,8 +137,7 @@ function setupAllEventListeners() {
         rawUrl = piece.sheetUrl;
       } else {
         const voice = document.getElementById('voice-select').value;
-        const voiceToIdx = { soprano: 0, alto: 1, tenor: 2, bass: 3 };
-        rawUrl = piece.audioUrls[voiceToIdx[voice]];
+        rawUrl = piece.audioUrls[voice];
       }
 
       if (!rawUrl) {
@@ -249,7 +255,12 @@ function renderTable() {
     tr.innerHTML = `
       <td class="results__cell--actions">
         ${piece.hasSheetMusic ? `<button class="action-btn" data-type="sheet" data-id="${piece.id}">🎼</button>` : ""}
-        ${(piece.hasSoprano || piece.hasAlto || piece.hasTenor || piece.hasBass) ? `<button class="action-btn" data-type="audio" data-id="${piece.id}">🔊</button>` : ""}
+        ${
+          (piece.hasSoprano || piece.hasSoprano2 || piece.hasAlto || piece.hasAlto2 ||
+           piece.hasTenor || piece.hasBaryton || piece.hasBass || piece.hasDemo)
+            ? `<button class="action-btn" data-type="audio" data-id="${piece.id}">🔊</button>`
+            : ""
+        }
       </td>  
       <td>${piece.title}</td>
       <td>${piece.author}</td>
@@ -275,21 +286,31 @@ function openModal(type, id) {
   if (type === "audio") {
     document.getElementById('audio-modal').setAttribute("aria-hidden", "false");
     const piece = data.find(p => p.id === id);
-    // Wypełnij select dostępnych głosów
+
+    // Mapa wszystkich obsługiwanych głosów
+    const voiceMap = [
+      { key: "soprano",   label: "Sopran" },
+      { key: "soprano2",  label: "Sopran 2" },
+      { key: "alto",      label: "Alt" },
+      { key: "alto2",     label: "Alt 2" },
+      { key: "tenor",     label: "Tenor" },
+      { key: "baryton",   label: "Baryton" },
+      { key: "bass",      label: "Bas" },
+      { key: "demo",      label: "Demo" }
+    ];
+
     const select = document.getElementById('voice-select');
     select.innerHTML = ""; // wyczyść stare opcje
-    const voiceLabels = { soprano: "Sopran", alto: "Alt", tenor: "Tenor", bass: "Bas" };
-    const voiceToIdx = { soprano: 0, alto: 1, tenor: 2, bass: 3 };
     let firstAvailable = null;
-    for (const [voice, idx] of Object.entries(voiceToIdx)) {
-      if (piece.audioUrls[idx]) {
+    voiceMap.forEach(({key, label}) => {
+      if (piece.audioUrls[key]) {
         const opt = document.createElement('option');
-        opt.value = voice;
-        opt.textContent = voiceLabels[voice];
+        opt.value = key;
+        opt.textContent = label;
         select.appendChild(opt);
-        if (!firstAvailable) firstAvailable = voice;
+        if (!firstAvailable) firstAvailable = key;
       }
-    }
+    });
     // Ustaw domyślnie pierwszy dostępny głos
     if (firstAvailable) select.value = firstAvailable;
   }
