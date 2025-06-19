@@ -2,16 +2,15 @@ let data = [];
 let sortColumn = "title";
 let sortDirection = "asc";
 let currentFontSize = 16;
+let eventListenersInitialized = false;
 
 const sheetId = "1p08YqPtheg66-0BuI5MvefcZJ7xMRqqXsJ4998naSUA";
 const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
 
-// ------------- Google Sheets loader -------------
 async function fetchData() {
   const res = await fetch(sheetUrl);
   const text = await res.text();
   const json = JSON.parse(text.slice(47, -2));
-  // A: tytuł (0), B: autor (1), C: aranżer (2), D: gatunek (3), E: wydarzenie (4), F: status (5), G: nuty (6), H-J-K-L: s-a-t-b (7-10)
   return json.table.rows.map(r => ({
     title: r.c[0]?.v ?? "",
     author: r.c[1]?.v ?? "",
@@ -19,53 +18,153 @@ async function fetchData() {
     genre: r.c[3]?.v ?? "",
     event: r.c[4]?.v ?? "",
     status: Number(r.c[5]?.v) || 0,
+    sheetUrl: r.c[6]?.v ?? "", // G
+    audioUrls: [
+      r.c[7]?.v ?? "", // H - soprano
+      r.c[8]?.v ?? "", // I - alto
+      r.c[9]?.v ?? "", // J - tenor
+      r.c[10]?.v ?? "" // K - bass
+    ],
     hasSheetMusic: !!r.c[6]?.v,
     hasSoprano: !!r.c[7]?.v,
     hasAlto: !!r.c[8]?.v,
     hasTenor: !!r.c[9]?.v,
     hasBass: !!r.c[10]?.v,
-    // ID: generowane (można z tytułu+autora)
+    // ID syntetyczne z najważniejszych pól (unikalne na potrzeby działania modali)
     id: `${r.c[0]?.v ?? ""}|${r.c[1]?.v ?? ""}|${r.c[2]?.v ?? ""}|${r.c[3]?.v ?? ""}|${r.c[4]?.v ?? ""}`
   }));
 }
 
-// Preferencje z localStorage
 document.addEventListener("DOMContentLoaded", async () => {
+  // Motyw
   const savedTheme = localStorage.getItem("choir-theme");
-  if (savedTheme === "dark") document.documentElement.classList.add("dark");
+  if (savedTheme === "dark") {
+    document.documentElement.classList.add("dark");
+    document.querySelector('.controls__icon').textContent = "☀️";
+  } else {
+    document.querySelector('.controls__icon').textContent = "🌙";
+  }
 
+  // Czcionka
   const savedFont = localStorage.getItem("choir-font-size");
   if (savedFont) {
     currentFontSize = parseInt(savedFont);
     document.documentElement.style.fontSize = currentFontSize + "px";
   }
 
-  // Poczekaj na dane z Google Sheets
+  // Pobierz dane z arkusza i uruchom UI
   data = await fetchData();
   renderFilters();
   renderTable();
+
+  if (!eventListenersInitialized) {
+    setupAllEventListeners();
+    eventListenersInitialized = true;
+  }
 });
 
-// ----------- Sterowanie motywem i czcionką ---------
-document.querySelector('.controls__button--theme-toggle').onclick = () => {
-  document.documentElement.classList.toggle("dark");
-  const newTheme = document.documentElement.classList.contains("dark") ? "dark" : "light";
-  localStorage.setItem("choir-theme", newTheme);
-  document.querySelector('.controls__icon').textContent = newTheme === "dark" ? "☀️" : "🌙";
-};
+function setupAllEventListeners() {
+  // Motyw
+  document.querySelector('.controls__button--theme-toggle').onclick = () => {
+    document.documentElement.classList.toggle("dark");
+    const newTheme = document.documentElement.classList.contains("dark") ? "dark" : "light";
+    localStorage.setItem("choir-theme", newTheme);
+    document.querySelector('.controls__icon').textContent = newTheme === "dark" ? "☀️" : "🌙";
+  };
+  // Czcionka
+  document.querySelector('.controls__button--font-increase').onclick = () => {
+    currentFontSize = Math.min(currentFontSize + 2, 24);
+    document.documentElement.style.fontSize = currentFontSize + "px";
+    localStorage.setItem("choir-font-size", currentFontSize);
+  };
+  document.querySelector('.controls__button--font-decrease').onclick = () => {
+    currentFontSize = Math.max(currentFontSize - 2, 12);
+    document.documentElement.style.fontSize = currentFontSize + "px";
+    localStorage.setItem("choir-font-size", currentFontSize);
+  };
 
-document.querySelector('.controls__button--font-increase').onclick = () => {
-  currentFontSize = Math.min(currentFontSize + 2, 24);
-  document.documentElement.style.fontSize = currentFontSize + "px";
-  localStorage.setItem("choir-font-size", currentFontSize);
-};
-document.querySelector('.controls__button--font-decrease').onclick = () => {
-  currentFontSize = Math.max(currentFontSize - 2, 12);
-  document.documentElement.style.fontSize = currentFontSize + "px";
-  localStorage.setItem("choir-font-size", currentFontSize);
-};
+  // Filtry i wyszukiwanie
+  [
+    '.search__input', '.filters__checkbox--active', '.filters__select--author',
+    '.filters__select--arranger', '.filters__select--genre', '.filters__select--event'
+  ].forEach(sel => {
+    document.querySelector(sel).addEventListener('input', renderTable);
+  });
 
-// ----------- Normalizacja tekstu dla wyszukiwarki ---------
+  // Sortowanie po nagłówkach
+  document.querySelectorAll('.results__header[data-key]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.key;
+      if (sortColumn === col) sortDirection = sortDirection === "asc" ? "desc" : "asc";
+      else {
+        sortColumn = col;
+        sortDirection = "asc";
+      }
+      renderTable();
+    });
+  });
+
+  // Akcje wierszy tabeli (modale)
+  document.querySelector('.results__body').addEventListener('click', e => {
+    const btn = e.target.closest('button.action-btn');
+    if (!btn) return;
+    openModal(btn.dataset.type, btn.dataset.id);
+  });
+
+  // Zamknięcie modali
+  document.querySelectorAll('.modal__btn--close').forEach(btn => {
+    btn.addEventListener('click', () => {
+      closeAllModals();
+    });
+  });
+
+  // Obsługa „pobierz” i „otwórz” (dołączamy jednorazowo)
+  document.querySelectorAll('.modal__btn--download, .modal__btn--open').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const isSheet = btn.dataset.type === "sheet";
+      const openInNew = btn.classList.contains('modal__btn--open');
+      const piece = data.find(p => p.id === currentPieceId);
+
+      let rawUrl = "";
+      if (isSheet) {
+        rawUrl = piece.sheetUrl;
+      } else {
+        const voice = document.getElementById('voice-select').value;
+        const voiceToIdx = { soprano: 0, alto: 1, tenor: 2, bass: 3 };
+        rawUrl = piece.audioUrls[voiceToIdx[voice]];
+      }
+
+      if (!rawUrl) {
+        alert("Brak linku do pliku!");
+        return;
+      }
+
+      // Przetwarzanie linku do pobrania
+      function driveToDirect(link) {
+        const match = link.match(/\/d\/([^/]+)\//);
+        if (!match) return "";
+        return `https://drive.usercontent.google.com/u/0/uc?id=${match[1]}&export=download`;
+      }
+
+      if (openInNew) {
+        // Otwórz w nowej karcie oryginalny link
+        window.open(rawUrl, "_blank");
+      } else {
+        // Pobierz przez drive.usercontent.google.com
+        const downloadUrl = driveToDirect(rawUrl);
+        if (!downloadUrl) {
+          alert("Nieprawidłowy link Google Drive!");
+          return;
+        }
+        window.location.href = downloadUrl;
+      }
+      closeAllModals();
+    });
+  });
+}
+
+// ---- Filtry, renderowanie, wyszukiwanie ----
+
 function normalizeText(str) {
   return (str||"")
     .toLowerCase()
@@ -86,7 +185,6 @@ function fuzzyMatch(searchTerm, ...fields) {
   });
 }
 
-// ----------- Wypełnianie selectów filtrujących ---------
 function renderFilters() {
   const authorSet = new Set(data.map(x => x.author).filter(Boolean));
   const arrangerSet = new Set(data.map(x => x.arranger).filter(Boolean));
@@ -109,7 +207,6 @@ function fillSelect(selector, names, values) {
   });
 }
 
-// ----------- Wyszukiwanie, filtrowanie i sortowanie ----------
 function getFilters() {
   return {
     search: document.querySelector('.search__input').value,
@@ -143,7 +240,6 @@ function filterAndSort() {
   return result;
 }
 
-// ----------- Renderowanie tabeli -----------
 function renderTable() {
   const tbody = document.querySelector('.results__body');
   tbody.innerHTML = "";
@@ -165,26 +261,7 @@ function renderTable() {
   });
 }
 
-// Obsługa sortowania kliknięciem w nagłówki
-document.querySelectorAll('.results__header[data-key]').forEach(th => {
-  th.addEventListener('click', () => {
-    const col = th.dataset.key;
-    if (sortColumn === col) sortDirection = sortDirection === "asc" ? "desc" : "asc";
-    else {
-      sortColumn = col;
-      sortDirection = "asc";
-    }
-    renderTable();
-  });
-});
-
-// Obsługa filtrów i wyszukiwania
-['.search__input', '.filters__checkbox--active', '.filters__select--author', '.filters__select--arranger', '.filters__select--genre', '.filters__select--event']
-  .forEach(sel => {
-    document.querySelector(sel).addEventListener('input', renderTable);
-  });
-
-// ----------- Modal -----------
+// ----------- Modale -----------
 let currentPieceId = null;
 let currentModalType = null;
 function closeAllModals() {
@@ -197,7 +274,6 @@ function openModal(type, id) {
   currentModalType = type;
   if (type === "audio") {
     document.getElementById('audio-modal').setAttribute("aria-hidden", "false");
-    // domyślna opcja - soprano jeśli istnieje, inaczej alt itd.
     const piece = data.find(p => p.id === id);
     let firstVoice = "soprano";
     if (!piece.hasSoprano && piece.hasAlto) firstVoice = "alto";
@@ -210,34 +286,3 @@ function openModal(type, id) {
   }
   document.body.style.overflow = "hidden";
 }
-
-// Akcje w tabeli
-document.querySelector('.results__body').addEventListener('click', e => {
-  const btn = e.target.closest('button.action-btn');
-  if (!btn) return;
-  openModal(btn.dataset.type, btn.dataset.id);
-});
-
-// Zamknij modale
-document.querySelectorAll('.modal__btn--close').forEach(btn => {
-  btn.addEventListener('click', () => {
-    closeAllModals();
-  });
-});
-
-// Pobierz / Otwórz nuty/audio
-function voiceToLetter(v) {
-  return {soprano: "s", alto: "a", tenor: "t", bass: "b"}[v];
-}
-document.querySelectorAll('.modal__btn--download, .modal__btn--open').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const isSheet = btn.dataset.type === "sheet";
-    const openInNew = btn.classList.contains('modal__btn--open');
-    let url = isSheet
-      ? `https://www.drive.pl/${openInNew ? "play" : "download"}/nuty/${currentPieceId}`
-      : `https://www.drive.pl/${openInNew ? "play" : "download"}/audio/${voiceToLetter(document.getElementById('voice-select').value)}/${currentPieceId}`;
-    if (openInNew) window.open(url, "_blank");
-    else window.location.href = url;
-    closeAllModals();
-  });
-});
