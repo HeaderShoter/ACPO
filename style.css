@@ -1,13 +1,14 @@
 :root {
   --bg-light: #f8fafc;
-  --bg-dark: #18181b;
+  --bg-dark: #000000;
   --panel-light: #fff;
   --panel-dark: #23232b;
   --border-light: #e5e7eb;
-  --border-dark: #333542;
-  --text-light: #18181b;
+  --border-dark: #555;
+  --text-light: #000000;
   --text-dark: #f3f4f6;
   --primary: #2563eb;
+  --primary-active: #6191f8;
   --radius: 1.2rem;
   --shadow: 0 6px 24px 0 rgba(0,0,0,0.08);
 }
@@ -71,7 +72,30 @@ html.dark .controls__button {
   background: var(--primary);
   color: #fff;
   border-color: var(--primary);
+  transition: 12ms;
 }
+
+html.dark .controls__button:hover {
+  background: var(--primary);
+  border: 2px solid var(--primary);
+  color: var(--text-dark);
+  transition: 12ms;
+}
+
+.controls__button:active {
+  background: var(--primary-active);
+  color: #fff;
+  border-color: var(--primary-active);
+  transition: 3ms;
+}
+
+html.dark .controls__button:active {
+  background: var(--primary-active);
+  border: 2px solid var(--primary-active);
+  color: var(--text-dark);
+  transition: 3ms;
+}
+
 
 .search {
   margin-bottom: 24px;
@@ -90,6 +114,12 @@ html.dark .controls__button {
   transition: border 0.2s;
 }
 
+.search__input:hover {
+  border: 2px solid var(--primary);
+  background: #eee;
+  transition: 3ms;
+}
+
 .search__input:focus {
   border: 2px solid var(--primary);
 }
@@ -98,6 +128,16 @@ html.dark .search__input {
   background: var(--panel-dark);
   border: 2px solid var(--border-dark);
   color: var(--text-dark);
+}
+
+html.dark .search__input:hover {
+  background: #333;
+  transition: 3ms;
+}
+
+html.dark .search__input:focus {
+  border: 2px solid var(--primary);
+  background: #333;
 }
 
 .filters {
@@ -256,13 +296,18 @@ html.dark .results__body td {
   margin: 5px;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-  transition: background 0.15s, border 0.15s;
+  transition: 15ms;
 }
 
 .results__body button:hover {
   background: var(--primary);
   color: #fff;
   border-color: var(--primary);
+}
+
+.results__body button:active {
+  background: var(--primary-active);
+  border-color: var(--primary-active);
 }
 
 html.dark .results__body button {
@@ -273,7 +318,14 @@ html.dark .results__body button {
 
 html.dark .results__body button:hover {
   background: var(--primary);
+  border: solid 2px var(--primary);
   color: #fff;
+  border: 1.5px solid var(--primary);
+}
+
+html.dark .results__body button:active {
+  background: var(--primary-active);
+  border: solid 1.5px var(--primary-active);
 }
 
 .modal {
@@ -299,6 +351,7 @@ html.dark .results__body button:hover {
   max-width: 96vw;
   box-shadow: 0 6px 40px 0 rgba(0,0,0,0.15);
   text-align: center;
+  border: 10px #888;
 }
 
 html.dark .modal__content {
@@ -316,23 +369,32 @@ html.dark .modal__content {
   margin: 0.3em 0.4em;
   padding: 9px 22px;
   font-size: 1rem;
-  border: 2px solid var(--primary);
+  border: 2px solid #ddd;
   border-radius: 0.8em;
   background: var(--panel-light);
-  color: var(--primary);
+  color: #444;
   cursor: pointer;
-  transition: background 0.18s, color 0.18s;
+  transition: background 0.12s, color 0.12s, border 0.12s;
   font-weight: 500;
 }
 
 .modal__btn--close {
-  border-color: #999;
+  border-color: #ddd;
   color: #444;
 }
 
-.modal__btn:hover {
+.modal__btn:hover,
+.modal__select:hover {
+  border: 2px solid var(--primary);
   background: var(--primary);
   color: #fff;
+}
+
+.modal__btn:active,
+.modal__select:active {
+  border: 2px solid var(--primary-active);
+  background: var(--primary-active);
+  transition: 3ms;
 }
 
 .modal__select {
@@ -345,23 +407,33 @@ html.dark .modal__content {
   background: var(--panel-light);
   color: var(--text-light);
   width: 85%;
+  transition: 12ms;
 }
 
 html.dark .modal__btn,
 html.dark .modal__select {
   background: var(--panel-dark);
-  color: var(--primary);
-  border-color: #3d4ea3;
+  color: #fff;
+  border-color: var(--border-dark);
 }
 
 html.dark .modal__btn--close {
-  color: #bbb;
-  border-color: #888;
+  color: #fff;
+  border-color: var(--border-dark);
 }
 
-html.dark .modal__btn:hover {
+html.dark .modal__btn:hover,
+html.dark .modal__select:hover {
   background: var(--primary);
-  color: #fff;
+  color: var(--text-dark);
+  border: 2px solid #2564ebb6;
+}
+
+html.dark .modal__btn:active,
+html.dark .modal__select:active {
+  background: var(--primary-active);
+  border: 2px solid var(--primary-active);
+  transition: 3ms;
 }
 
 @media (max-width: 700px) {
