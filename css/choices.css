@@ -1,0 +1,77 @@
+.choices {
+  border-radius: var(--radius);
+  background: var(--panel-light);
+  border: 2px solid var(--border-light);
+  font-size: 1em;
+  min-width: 45%;
+  margin: 0;
+  box-shadow: var(--shadow);
+  transition: background 0s, border 0.2s;
+  margin-right: 0.5em;
+}
+
+.choices__inner {
+  border-radius: var(--radius);
+  background: transparent;
+  min-height: 2.5em;
+  /* padding: 0.5em 2em 0.5em 1em; */
+  padding: auto;
+  color: var(--text-light);
+  border: none;
+  box-shadow: none;
+}
+
+.choices__list--dropdown,
+.choices__list[aria-expanded] {
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--panel-light);
+  border: 2px solid var(--primary);
+  box-shadow: var(--shadow);
+  color: var(--text-light);
+  margin-top: 2px;
+  z-index: 999;
+}
+
+.choices__item--selectable {
+  /* padding: 0.7em 1.1em; */
+  padding: auto;
+  border-radius: 0.6em;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.17s, color 0.17s;
+}
+
+.choices__item--selectable.is-highlighted,
+.choices__item--selectable:hover {
+  background: var(--primary);
+  width: auto;
+  /* color: #fff; */
+  font-weight: 600;
+}
+
+.choices[data-type*="select-one"]::after {
+  border-color: var(--primary) transparent transparent transparent;
+  right: 1.2em;
+}
+
+/* Tryb dark */
+html.dark .choices,
+html.dark .choices__inner {
+  background: var(--panel-dark);
+  color: var(--text-dark);
+  border-color: var(--border-dark);
+}
+html.dark .choices__list--dropdown,
+html.dark .choices__list[aria-expanded] {
+  background: var(--panel-dark);
+  color: var(--text-dark);
+  border: 2px solid var(--primary);
+}
+
+html.dark .choices__item--selectable.is-highlighted,
+html.dark .choices__item--selectable:hover {
+  background: var(--primary);
+  background: green;
+  color: #fff;
+  color: aqua;
+}
