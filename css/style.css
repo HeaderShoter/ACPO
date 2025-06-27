@@ -2,7 +2,7 @@
   --bg-light: #f8fafc;
   --bg-dark: #000000;
   --panel-light: #fff;
-  --panel-dark: #23232b;
+  --panel-dark: #171717;
   --border-light: #e5e7eb;
   --border-dark: #555;
   --text-light: #000000;
@@ -347,7 +347,11 @@ html.dark .results__body button:active {
   max-width: 96vw;
   box-shadow: 0 6px 40px 0 rgba(0,0,0,0.15);
   text-align: center;
-  border: 10px #888;
+  border: 1.5px solid var(--border-light);
+}
+
+html.dark .modal__content{
+  border: 1.5px solid var(--border-dark);
 }
 
 html.dark .modal__content {
