@@ -115,7 +115,7 @@ html.dark .controls__button:active {
 }
 
 .search__input:hover {
-  border: 2px solid var(--primary);
+  border: 2px solid #ccc;
   background: #eee;
   transition: 3ms;
 }
@@ -184,10 +184,6 @@ font-weight: 600;
   color: var(--text-light);
   min-width: 170px;
   transition: border 0.2s, background 0.2s;
-}
-
-.filters__select:focus {
-  border: 2px solid var(--primary);
 }
 
 html.dark .filters__select {
@@ -383,17 +379,25 @@ html.dark .modal__content {
   color: #444;
 }
 
-.modal__btn:hover,
+.filters__select:hover,
 .modal__select:hover {
+  border: 2px solid #ccc;
+  background: #eee;
+  transition: 12ms;
+}
+
+.modal__btn:hover {
   border: 2px solid var(--primary);
   background: var(--primary);
   color: #fff;
 }
 
+.filters__select:active,
 .modal__btn:active,
 .modal__select:active {
   border: 2px solid var(--primary-active);
   background: var(--primary-active);
+  color: #fff;
   transition: 3ms;
 }
 
@@ -422,13 +426,20 @@ html.dark .modal__btn--close {
   border-color: var(--border-dark);
 }
 
-html.dark .modal__btn:hover,
+html.dark .filters__select:hover,
 html.dark .modal__select:hover {
+   background: #333;
+  color: var(--text-dark);
+  transition: 12ms;
+}
+
+html.dark .modal__btn:hover {
   background: var(--primary);
   color: var(--text-dark);
   border: 2px solid #2564ebb6;
 }
 
+html.dark .filters__select:active,
 html.dark .modal__btn:active,
 html.dark .modal__select:active {
   background: var(--primary-active);
